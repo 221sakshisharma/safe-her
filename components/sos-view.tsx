@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   AlertTriangle,
   Phone,
@@ -11,11 +11,20 @@ import {
   Send,
   Clock,
   CheckCircle2,
+  Loader2,
+  Navigation,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { useGeolocation } from "@/hooks/use-geolocation"
+
+declare global {
+  interface Window {
+    L: typeof import("leaflet")
+  }
+}
 
 const TRUSTED_CIRCLE = [
   { id: 1, name: "Mom", phone: "+1 555-0101", status: "online", initials: "M" },
@@ -30,9 +39,128 @@ const NEARBY_HELP = [
   { name: "Fire Station #5", distance: "1.2 km", type: "Fire" },
 ]
 
+function SOSMiniMap({ lat, lng, active }: { lat: number; lng: number; active: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<L.Map | null>(null)
+  const [leafletLoaded, setLeafletLoaded] = useState(false)
+
+  useEffect(() => {
+    if (window.L) {
+      setLeafletLoaded(true)
+      return
+    }
+    const link = document.createElement("link")
+    link.rel = "stylesheet"
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    document.head.appendChild(link)
+    const script = document.createElement("script")
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    script.onload = () => setLeafletLoaded(true)
+    document.head.appendChild(script)
+  }, [])
+
+  useEffect(() => {
+    if (!leafletLoaded || !containerRef.current) return
+    const L = window.L
+
+    if (mapRef.current) {
+      mapRef.current.setView([lat, lng], 16)
+      return
+    }
+
+    const map = L.map(containerRef.current, {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      touchZoom: false,
+    }).setView([lat, lng], 16)
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+    }).addTo(map)
+
+    const pulseColor = active ? "rgba(239,68,68" : "rgba(45,212,191"
+    const solidColor = active ? "#ef4444" : "#2dd4bf"
+    const borderColor = active ? "#fca5a5" : "#99f6e4"
+
+    const userIcon = L.divIcon({
+      className: "sos-user-marker",
+      html: `
+        <div style="position:relative;width:48px;height:48px;">
+          <div style="position:absolute;inset:0;border-radius:50%;background:${pulseColor},0.15);animation:sos-pulse 1.5s ease-out infinite;"></div>
+          <div style="position:absolute;inset:6px;border-radius:50%;background:${pulseColor},0.25);animation:sos-pulse 1.5s ease-out infinite 0.3s;"></div>
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:${solidColor};border:3px solid ${borderColor};box-shadow:0 0 16px ${pulseColor},0.6);"></div>
+        </div>
+      `,
+      iconSize: [48, 48],
+      iconAnchor: [24, 24],
+    })
+
+    L.marker([lat, lng], { icon: userIcon }).addTo(map)
+
+    // Accuracy/broadcast circle
+    L.circle([lat, lng], {
+      radius: active ? 200 : 100,
+      color: active ? "rgba(239,68,68,0.4)" : "rgba(45,212,191,0.3)",
+      fillColor: active ? "rgba(239,68,68,0.08)" : "rgba(45,212,191,0.06)",
+      fillOpacity: 1,
+      weight: 1,
+    }).addTo(map)
+
+    if (!document.getElementById("sos-pulse-css")) {
+      const style = document.createElement("style")
+      style.id = "sos-pulse-css"
+      style.textContent = `
+        @keyframes sos-pulse {
+          0% { transform: scale(0.5); opacity: 1; }
+          100% { transform: scale(1.8); opacity: 0; }
+        }
+      `
+      document.head.appendChild(style)
+    }
+
+    mapRef.current = map
+  }, [leafletLoaded, lat, lng, active])
+
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
+    }
+  }, [])
+
+  if (!leafletLoaded) {
+    return (
+      <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative h-48 overflow-hidden rounded-xl border border-border">
+      <div ref={containerRef} className="absolute inset-0" />
+      <div className="absolute bottom-2 left-2 z-[1000] rounded-md bg-card/90 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
+        {lat.toFixed(4)}, {lng.toFixed(4)}
+      </div>
+      {active && (
+        <div className="absolute right-2 top-2 z-[1000] flex items-center gap-1.5 rounded-md bg-destructive/20 px-2 py-1 backdrop-blur-sm">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
+          <span className="text-[10px] font-medium text-destructive">Broadcasting</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function SOSView() {
   const [activated, setActivated] = useState(false)
   const [countdown, setCountdown] = useState<number | null>(null)
+  const { lat, lng, hasLocation, error, loading } = useGeolocation()
 
   function handleSOS() {
     if (activated) {
@@ -127,6 +255,18 @@ export function SOSView() {
               </Button>
             </div>
           )}
+
+          {/* Live Location Mini Map */}
+          <div className="w-full max-w-md">
+            <SOSMiniMap lat={lat} lng={lng} active={activated} />
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <Navigation className="h-3 w-3 text-primary" />
+              <span className="text-xs text-muted-foreground">
+                {loading ? "Getting location..." : hasLocation ? `Live GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}` : `Approximate: ${lat.toFixed(4)}, ${lng.toFixed(4)}`}
+              </span>
+              {error && <span className="text-[10px] text-warning">(GPS unavailable)</span>}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -209,11 +349,19 @@ export function SOSView() {
               ))}
             </div>
 
-            {activated && (
+            {activated && hasLocation && (
               <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
                 <Clock className="h-4 w-4 text-primary" />
                 <p className="text-xs text-primary">
-                  Live location sharing active. Nearest help: 0.3 km away.
+                  Live GPS location shared with emergency contacts. Nearest help: 0.3 km away.
+                </p>
+              </div>
+            )}
+            {activated && !hasLocation && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-warning/20 bg-warning/5 px-3 py-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <p className="text-xs text-warning">
+                  Sharing approximate location. Enable GPS for precise tracking.
                 </p>
               </div>
             )}
