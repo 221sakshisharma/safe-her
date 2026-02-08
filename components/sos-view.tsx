@@ -77,7 +77,7 @@ function SOSMiniMap({ lat, lng, active }: { lat: number; lng: number; active: bo
       touchZoom: false,
     }).setView([lat, lng], 16)
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       maxZoom: 19,
     }).addTo(map)
 

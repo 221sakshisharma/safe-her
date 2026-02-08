@@ -93,8 +93,8 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
         attributionControl: false,
       }).setView([lat, lng], 15)
 
-      // Dark tile layer
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      // Voyager tile layer
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
         maxZoom: 19,
       }).addTo(map)
 
@@ -129,11 +129,11 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
     const userMarker = L.marker([lat, lng], { icon: userIcon })
       .addTo(map)
       .bindPopup(
-        `<div style="font-family:sans-serif;font-size:12px;color:#e5e7eb;background:#1f2937;padding:6px 10px;border-radius:6px;">
-          <strong style="color:#2dd4bf;">Your Location</strong><br/>
-          <span style="color:#9ca3af;">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
+        `<div style="font-family:sans-serif;font-size:12px;color:#111827;background:#ffffff;padding:6px 10px;border-radius:6px;border:1px solid #e5e7eb;">
+          <strong style="color:#0f766e;">Your Location</strong><br/>
+          <span style="color:#6b7280;">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
         </div>`,
-        { className: "dark-popup" }
+        { className: "map-popup" }
       )
     markersRef.current.push(userMarker)
 
@@ -162,12 +162,12 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       const marker = L.marker([inc.lat, inc.lng], { icon })
         .addTo(map)
         .bindPopup(
-          `<div style="font-family:sans-serif;font-size:12px;color:#e5e7eb;background:#1f2937;padding:8px 12px;border-radius:6px;min-width:120px;">
-            <strong style="color:#f9fafb;text-transform:capitalize;">${inc.type}</strong><br/>
+          `<div style="font-family:sans-serif;font-size:12px;color:#111827;background:#ffffff;padding:8px 12px;border-radius:6px;min-width:120px;border:1px solid #e5e7eb;">
+            <strong style="color:#111827;text-transform:capitalize;">${inc.type}</strong><br/>
             <span style="color:${color};font-weight:600;text-transform:capitalize;">${inc.severity} severity</span><br/>
-            <span style="color:#9ca3af;">${inc.time}</span>
+            <span style="color:#6b7280;">${inc.time}</span>
           </div>`,
-          { className: "dark-popup" }
+          { className: "map-popup" }
         )
       markersRef.current.push(marker)
     })
@@ -186,10 +186,10 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       const marker = L.marker([place.lat, place.lng], { icon })
         .addTo(map)
         .bindPopup(
-          `<div style="font-family:sans-serif;font-size:12px;color:#e5e7eb;background:#1f2937;padding:8px 12px;border-radius:6px;">
-            <strong style="color:#818cf8;">${place.name}</strong>
+          `<div style="font-family:sans-serif;font-size:12px;color:#111827;background:#ffffff;padding:8px 12px;border-radius:6px;border:1px solid #e5e7eb;">
+            <strong style="color:#4f46e5;">${place.name}</strong>
           </div>`,
-          { className: "dark-popup" }
+          { className: "map-popup" }
         )
       markersRef.current.push(marker)
     })
@@ -220,24 +220,25 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
           0% { transform: scale(0.5); opacity: 1; }
           100% { transform: scale(1.5); opacity: 0; }
         }
-        .dark-popup .leaflet-popup-content-wrapper {
+        .map-popup .leaflet-popup-content-wrapper {
           background: transparent !important;
           box-shadow: none !important;
           padding: 0 !important;
         }
-        .dark-popup .leaflet-popup-content {
+        .map-popup .leaflet-popup-content {
           margin: 0 !important;
         }
-        .dark-popup .leaflet-popup-tip {
-          background: #1f2937 !important;
+        .map-popup .leaflet-popup-tip {
+          background: #ffffff !important;
+          border: 1px solid #e5e7eb;
         }
         .leaflet-control-zoom a {
-          background: #1f2937 !important;
-          color: #d1d5db !important;
-          border-color: #374151 !important;
+          background: #ffffff !important;
+          color: #111827 !important;
+          border-color: #e5e7eb !important;
         }
         .leaflet-control-zoom a:hover {
-          background: #374151 !important;
+          background: #f3f4f6 !important;
         }
       `
       document.head.appendChild(style)
@@ -291,7 +292,7 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       <Button
         size="icon"
         variant="secondary"
-        className="absolute bottom-14 right-3 z-[1000] h-8 w-8 rounded-md border border-border bg-card/90 backdrop-blur-sm hover:bg-secondary"
+        className="absolute bottom-3 right-3 z-[1000] h-8 w-8 rounded-md border border-border bg-card/90 backdrop-blur-sm hover:bg-secondary"
         onClick={handleRecenter}
         aria-label="Re-center map on your location"
       >
@@ -299,7 +300,7 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       </Button>
 
       {/* Legend */}
-      <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap gap-2 rounded-lg bg-card/90 px-3 py-2 backdrop-blur-sm">
+      {/* <div className="absolute bottom-3 left-3 z-[1000] flex flex-wrap gap-2 rounded-lg bg-card/90 px-3 py-2 backdrop-blur-sm">
         <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-destructive" /> High
         </span>
@@ -312,17 +313,17 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
         <span className="flex items-center gap-1.5 text-[10px] text-primary">
           <MapPin className="h-2.5 w-2.5" /> You
         </span>
-      </div>
+      </div> */}
 
       {/* Location info */}
-      <div className="absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-md bg-card/90 px-2.5 py-1 backdrop-blur-sm">
+      {/* <div className="absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-md bg-card/90 px-2.5 py-1 backdrop-blur-sm">
         {error && (
           <span className="text-[10px] text-warning">Approximate location</span>
         )}
         {!error && (
           <span className="text-[10px] font-medium text-primary">Live location</span>
         )}
-      </div>
+      </div> */}
     </div>
   )
 }
