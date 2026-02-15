@@ -41,7 +41,7 @@
     --input: 240 15% 90%;
     --ring: 170 50% 55%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
 
     /* Pastel Chart Colors */
     --chart-1: 170 50% 55%; /* Mint */
@@ -114,6 +114,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 0.85rem;
   }
 }
 
