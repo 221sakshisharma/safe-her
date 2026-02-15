@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Send, Bot, User, Sparkles, Shield, MapPin, Clock } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot, User, Sparkles, Shield, MapPin, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useSafety } from "@/context/safety-context";
 
 interface Message {
-  id: number
-  role: "user" | "assistant"
-  content: string
-  timestamp: string
+  id: number;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: string;
 }
 
 const INITIAL_MESSAGES: Message[] = [
@@ -21,66 +21,104 @@ const INITIAL_MESSAGES: Message[] = [
       "Hello! I'm your SafeHer AI Safety Assistant. I can help you with personalized safety advice based on real-time data from your area. I have access to current incident reports, safety scores, and risk predictions. How can I help you stay safe today?",
     timestamp: "Just now",
   },
-]
+];
 
 const SUGGESTED_PROMPTS = [
   { text: "Is my current area safe?", icon: Shield },
   { text: "Best time to walk home?", icon: Clock },
   { text: "Safest route to the station?", icon: MapPin },
   { text: "Any recent incidents nearby?", icon: Sparkles },
-]
-
-const AI_RESPONSES: Record<string, string> = {
-  "Is my current area safe?":
-    "Based on current data, your area has a Safety Score of 72/100 (Moderate). There have been 3 incidents within 100m in the last 24 hours, primarily theft-related. The area is well-lit and has a police station 0.3 km away. I'd recommend staying aware of your surroundings, especially after 8 PM when risk levels increase. Would you like me to suggest a safer alternative route?",
-  "Best time to walk home?":
-    "Based on our risk prediction model, the safest window for walking in your area is between 6 AM and 6 PM, with the lowest risk around 10 AM (12% probability). Risk increases significantly after 8 PM, peaking at 10 PM - 12 AM (72% probability). If you need to walk after dark, I recommend taking Cedar Boulevard which has continuous street lighting and CCTV coverage. Would you like me to set a safety reminder?",
-  "Safest route to the station?":
-    "I've analyzed 3 possible routes to Central Station:\n\n1. Via Main Street (0.8 km, 12 min) - Safety: HIGH. Well-lit, commercial area, CCTV coverage.\n\n2. Via Oak Park (0.6 km, 9 min) - Safety: MODERATE. Shorter but passes through a dimly-lit section near the park.\n\n3. Via Elm Street (1.1 km, 15 min) - Safety: LOW. Recent harassment reports in this area.\n\nI recommend Route 1 via Main Street. Would you like me to start navigation?",
-  "Any recent incidents nearby?":
-    "In the last 24 hours within your 100m radius:\n\n- Verbal harassment near Elm St & 5th Ave (2h ago, verified) - HIGH severity\n- Phone snatching on Cedar Boulevard (3h ago, verified) - HIGH severity\n- Suspicious activity near Riverside Playground (reported by community) - MEDIUM severity\n\nOverall trend: Theft incidents are down 15% from last month, but harassment reports have increased 5%, particularly on weekends. I recommend avoiding the Elm Street corridor after dark.",
-}
+];
 
 export function AIAssistantView() {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES)
-  const [input, setInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const { safetyScore, riskLevel, incidents, locationName, loading } =
+    useSafety();
+  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping])
+  }, [messages, isTyping]);
 
-  function handleSend(text?: string) {
-    const msg = text || input.trim()
-    if (!msg) return
+  async function handleSend(text?: string) {
+    const msg = text || input.trim();
+    if (!msg) return;
 
     const userMsg: Message = {
       id: Date.now(),
       role: "user",
       content: msg,
       timestamp: "Just now",
-    }
-    setMessages((prev) => [...prev, userMsg])
-    setInput("")
-    setIsTyping(true)
+    };
 
-    setTimeout(() => {
-      const response =
-        AI_RESPONSES[msg] ||
-        `Based on current safety data for your location, I can see that your area has moderate risk levels. The Safety Score is 72/100 with 3 recent incidents nearby. For the most personalized advice, try asking about specific routes, times, or safety concerns. I'm here to help you navigate safely.`
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setIsTyping(true);
+
+    try {
+      // Prepare context for the AI
+      const context = {
+        location: locationName,
+        safetyScore,
+        riskLevel,
+        incidents: incidents.slice(0, 10), // Limit to top 10
+      };
+
+      // Filter out system messages and map to API format
+      const apiMessages = messages
+        .filter((m) => m.role !== "system")
+        .concat(userMsg)
+        .map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: apiMessages,
+          context,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(
+          `Failed to get response: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
 
       const botMsg: Message = {
         id: Date.now() + 1,
         role: "assistant",
-        content: response,
+        content: data.reply,
         timestamp: "Just now",
-      }
-      setMessages((prev) => [...prev, botMsg])
-      setIsTyping(false)
-    }, 1500)
+      };
+
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMsg: Message = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content:
+          "I'm having trouble connecting to the safety network right now. Please try again.",
+        timestamp: "Just now",
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
   }
 
   return (
@@ -89,7 +127,10 @@ export function AIAssistantView() {
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
         <Sparkles className="h-4 w-4 shrink-0 text-primary" />
         <p className="text-xs text-muted-foreground">
-          AI Assistant has access to: Safety Score (72), 7 nearby incidents, risk predictions, and community reports. All responses are context-aware.
+          AI Assistant has access to: Safety Score (
+          {loading ? "..." : safetyScore}), {loading ? "..." : incidents.length}{" "}
+          nearby incidents, risk predictions, and community reports. All
+          responses are context-aware.
         </p>
       </div>
 
@@ -101,7 +142,7 @@ export function AIAssistantView() {
               key={msg.id}
               className={cn(
                 "flex gap-3",
-                msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                msg.role === "user" ? "flex-row-reverse" : "flex-row",
               )}
             >
               <div
@@ -109,7 +150,7 @@ export function AIAssistantView() {
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
                   msg.role === "assistant"
                     ? "bg-primary/15 text-primary"
-                    : "bg-secondary text-muted-foreground"
+                    : "bg-secondary text-muted-foreground",
                 )}
               >
                 {msg.role === "assistant" ? (
@@ -123,7 +164,7 @@ export function AIAssistantView() {
                   "max-w-[80%] rounded-2xl px-4 py-3",
                   msg.role === "assistant"
                     ? "rounded-tl-sm bg-card border border-border"
-                    : "rounded-tr-sm bg-primary text-primary-foreground"
+                    : "rounded-tr-sm bg-primary text-primary-foreground",
                 )}
               >
                 <p className="whitespace-pre-line text-sm leading-relaxed">
@@ -134,7 +175,7 @@ export function AIAssistantView() {
                     "mt-1.5 text-[10px]",
                     msg.role === "assistant"
                       ? "text-muted-foreground"
-                      : "text-primary-foreground/70"
+                      : "text-primary-foreground/70",
                   )}
                 >
                   {msg.timestamp}
@@ -150,9 +191,18 @@ export function AIAssistantView() {
               </div>
               <div className="rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3">
                 <div className="flex gap-1">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             </div>
@@ -198,5 +248,5 @@ export function AIAssistantView() {
         </Button>
       </div>
     </div>
-  )
+  );
 }
