@@ -161,8 +161,8 @@ export function SafeRoutesView() {
       className: "custom-start-marker",
       html: `
         <div style="position:relative;width:32px;height:32px;">
-          <div style="position:absolute;inset:0;border-radius:50%;background:rgba(130,120,220,0.12);animation:pulse-ring 2s ease-out infinite;"></div>
-          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#8278dc;border:2px solid #b4aef0;box-shadow:0 0 12px rgba(130,120,220,0.4);"></div>
+          <div style="position:absolute;inset:0;border-radius:50%;background:rgba(219,83,117,0.12);animation:pulse-ring 2s ease-out infinite;"></div>
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#db5375;border:3px solid #f9b4c6;box-shadow:0 0 10px rgba(219,83,117,0.4);"></div>
         </div>
       `,
       iconSize: [32, 32],
@@ -171,8 +171,8 @@ export function SafeRoutesView() {
     const startMarker = L.marker([lat, lng], { icon: startIcon })
       .addTo(map)
       .bindPopup(
-        `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#dcdce4;background:rgba(16,16,23,0.9);padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(8px);">
-          <strong style="color:#8278dc;">Your Location</strong>
+        `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#e5e7eb;background:#1f2937;padding:6px 10px;border-radius:10px;">
+          <strong style="color:#db5375;">Your Location</strong>
         </div>`,
         { className: "dark-popup" }
       )
@@ -192,7 +192,7 @@ export function SafeRoutesView() {
     )
       .addTo(map)
       .bindPopup(
-        `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#dcdce4;background:rgba(16,16,23,0.9);padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(8px);">
+        `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#e5e7eb;background:#1f2937;padding:6px 10px;border-radius:10px;">
           <strong style="color:#d95050;">Destination</strong>
         </div>`,
         { className: "dark-popup" }
@@ -216,11 +216,8 @@ export function SafeRoutesView() {
         attributionControl: false,
       }).setView([lat, lng], 14)
 
-      const isDark = document.documentElement.classList.contains("dark")
       L.tileLayer(
-        isDark
-          ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
         { maxZoom: 19 }
       ).addTo(map)
 
@@ -244,13 +241,12 @@ export function SafeRoutesView() {
           .dark-popup .leaflet-popup-content { margin: 0 !important; }
           .dark-popup .leaflet-popup-tip { background: #1f2937 !important; }
           .leaflet-control-zoom a {
-            background: rgba(16,16,23,0.85) !important;
-            color: #dcdce4 !important;
-            border-color: rgba(255,255,255,0.06) !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+            border-color: #e5e7eb !important;
             border-radius: 8px !important;
-            backdrop-filter: blur(8px);
           }
-          .leaflet-control-zoom a:hover { background: rgba(24,24,34,0.95) !important; }
+          .leaflet-control-zoom a:hover { background: #f3f4f6 !important; }
           .leaflet-control-zoom { border-radius: 10px !important; overflow: hidden; border: none !important; }
         `
         document.head.appendChild(style)
@@ -278,7 +274,7 @@ export function SafeRoutesView() {
   return (
     <div className="flex flex-col gap-5 lg:gap-6">
       {/* Input */}
-      <div className="rounded-2xl border border-border/60 bg-card p-4 animate-fade-in-up">
+      <div className="rounded-2xl border border-border bg-card p-4 animate-fade-in">
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="flex-1">
             <label htmlFor="route-from" className="mb-1 block text-[11px] font-medium text-muted-foreground">
@@ -323,8 +319,8 @@ export function SafeRoutesView() {
 
       <div className="grid gap-5 lg:grid-cols-5 lg:gap-6">
         {/* Map */}
-        <div className="lg:col-span-3 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-          <div className="relative h-80 overflow-hidden rounded-2xl border border-border/60 bg-card lg:h-[500px]">
+        <div className="lg:col-span-3 animate-fade-in" style={{ animationDelay: "100ms" }}>
+          <div className="relative h-80 overflow-hidden rounded-2xl border border-border bg-card lg:h-[500px]">
             {loading || !leafletLoaded ? (
               <div className="flex h-full items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
@@ -354,7 +350,7 @@ export function SafeRoutesView() {
         </div>
 
         {/* Route Options */}
-        <div className="flex flex-col gap-3 lg:col-span-2 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+        <div className="flex flex-col gap-3 lg:col-span-2 animate-fade-in" style={{ animationDelay: "200ms" }}>
           <h3 className="text-sm font-semibold text-foreground">Available Routes</h3>
           {routeData.routes.map((route) => (
             <button
@@ -363,8 +359,8 @@ export function SafeRoutesView() {
               className={cn(
                 "rounded-2xl border p-4 text-left transition-all duration-200",
                 selectedRoute === route.id
-                  ? "border-primary/20 bg-primary/5"
-                  : "border-border/60 bg-card hover:border-border"
+                  ? "border-primary/30 bg-primary/5 shadow-sm"
+                  : "border-border bg-card hover:bg-accent/50"
               )}
             >
               <div className="flex items-start justify-between">
