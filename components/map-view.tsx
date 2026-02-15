@@ -1,7 +1,6 @@
 "use client"
 
 import { SafetyMap } from "@/components/safety-map"
-import { Map } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
@@ -11,17 +10,12 @@ export function MapView() {
   const [activeFilter, setActiveFilter] = useState("All Incidents")
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col gap-4">
+    <div className="flex h-[calc(100vh-7rem)] flex-col gap-5">
       {/* Controls */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
-            <Map className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Live Safety Heatmap</h3>
-            <p className="text-[11px] text-muted-foreground">7 incidents in 100m radius</p>
-          </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in-up">
+        <div>
+          <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-foreground">Live Safety Heatmap</h3>
+          <p className="text-[12px] text-muted-foreground/60">7 incidents in 100m radius</p>
         </div>
         <div className="flex gap-1.5 overflow-x-auto">
           {FILTERS.map((f) => (
@@ -29,10 +23,10 @@ export function MapView() {
               key={f}
               onClick={() => setActiveFilter(f)}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all duration-200",
+                "shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-colors",
                 activeFilter === f
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-accent text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground/60 hover:text-foreground"
               )}
             >
               {f}
@@ -41,27 +35,22 @@ export function MapView() {
         </div>
       </div>
 
-      {/* Full Map */}
-      <div className="flex-1 animate-fade-in" style={{ animationDelay: "100ms" }}>
+      {/* Map */}
+      <div className="flex-1 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
         <SafetyMap fullscreen />
       </div>
 
       {/* Bottom Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 animate-fade-in" style={{ animationDelay: "200ms" }}>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 animate-fade-in-up" style={{ animationDelay: "160ms" }}>
         {[
-          { label: "High Risk Zones", value: "2", color: "text-destructive", bg: "bg-destructive/10" },
-          { label: "Moderate Zones", value: "3", color: "text-warning", bg: "bg-warning/10" },
-          { label: "Safe Zones", value: "4", color: "text-success", bg: "bg-success/10" },
-          { label: "Help Centers", value: "3", color: "text-primary", bg: "bg-primary/10" },
+          { label: "High Risk", value: "2", color: "text-destructive" },
+          { label: "Moderate", value: "3", color: "text-warning" },
+          { label: "Safe Zones", value: "4", color: "text-success" },
+          { label: "Help Centers", value: "3", color: "text-primary" },
         ].map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-center justify-between rounded-2xl border border-border bg-card p-3.5"
-          >
-            <span className="text-[11px] font-medium text-muted-foreground">
-              {stat.label}
-            </span>
-            <span className={cn("text-lg font-semibold", stat.color)}>{stat.value}</span>
+          <div key={stat.label} className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3">
+            <span className="text-[11px] text-muted-foreground/60">{stat.label}</span>
+            <span className={cn("text-lg font-semibold tabular-nums", stat.color)}>{stat.value}</span>
           </div>
         ))}
       </div>

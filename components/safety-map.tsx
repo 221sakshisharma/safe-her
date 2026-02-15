@@ -85,8 +85,11 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
         attributionControl: false,
       }).setView([lat, lng], 15)
 
+      const isDark = document.documentElement.classList.contains("dark")
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        isDark
+          ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
         { maxZoom: 19 }
       ).addTo(map)
 
@@ -105,9 +108,9 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       className: "custom-user-marker",
       html: `
         <div style="position:relative;width:40px;height:40px;">
-          <div style="position:absolute;inset:0;border-radius:50%;background:rgba(219,83,117,0.12);animation:pulse-ring 2s ease-out infinite;"></div>
-          <div style="position:absolute;inset:8px;border-radius:50%;background:rgba(219,83,117,0.2);animation:pulse-ring 2s ease-out infinite 0.5s;"></div>
-          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#db5375;border:3px solid #f9b4c6;box-shadow:0 0 12px rgba(219,83,117,0.5);"></div>
+          <div style="position:absolute;inset:0;border-radius:50%;background:rgba(130,120,220,0.12);animation:pulse-ring 2s ease-out infinite;"></div>
+          <div style="position:absolute;inset:8px;border-radius:50%;background:rgba(130,120,220,0.2);animation:pulse-ring 2s ease-out infinite 0.5s;"></div>
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#8278dc;border:2px solid #b4aef0;box-shadow:0 0 16px rgba(130,120,220,0.5);"></div>
         </div>
       `,
       iconSize: [40, 40],
@@ -116,9 +119,9 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
     const userMarker = L.marker([lat, lng], { icon: userIcon })
       .addTo(map)
       .bindPopup(
-        `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#111827;background:#ffffff;padding:6px 10px;border-radius:10px;border:1px solid #e5e7eb;">
-          <strong style="color:#db5375;">Your Location</strong><br/>
-          <span style="color:#6b7280;">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
+        `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#dcdce4;background:rgba(16,16,23,0.9);padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px);">
+          <strong style="color:#8278dc;">Your Location</strong><br/>
+          <span style="color:#7a7a8e;">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>
         </div>`,
         { className: "map-popup" }
       )
@@ -127,8 +130,8 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
     if (hasLocation) {
       const circle = L.circle([lat, lng], {
         radius: 100,
-        color: "rgba(219,83,117,0.25)",
-        fillColor: "rgba(219,83,117,0.06)",
+        color: "rgba(130,120,220,0.2)",
+        fillColor: "rgba(130,120,220,0.04)",
         fillOpacity: 1,
         weight: 1,
       }).addTo(map)
@@ -147,10 +150,10 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       const marker = L.marker([inc.lat, inc.lng], { icon })
         .addTo(map)
         .bindPopup(
-          `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#111827;background:#ffffff;padding:8px 12px;border-radius:10px;min-width:120px;border:1px solid #e5e7eb;">
-            <strong style="color:#111827;text-transform:capitalize;">${inc.type}</strong><br/>
-            <span style="color:${color};font-weight:600;text-transform:capitalize;">${inc.severity} severity</span><br/>
-            <span style="color:#6b7280;">${inc.time}</span>
+          `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#dcdce4;background:rgba(16,16,23,0.9);padding:8px 12px;border-radius:10px;min-width:120px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px);">
+            <strong style="text-transform:capitalize;">${inc.type}</strong><br/>
+            <span style="color:${color};font-weight:600;text-transform:capitalize;">${inc.severity}</span><br/>
+            <span style="color:#7a7a8e;">${inc.time}</span>
           </div>`,
           { className: "map-popup" }
         )
@@ -170,8 +173,8 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       const marker = L.marker([place.lat, place.lng], { icon })
         .addTo(map)
         .bindPopup(
-          `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#111827;background:#ffffff;padding:8px 12px;border-radius:10px;border:1px solid #e5e7eb;">
-            <strong style="color:#4f46e5;">${place.name}</strong>
+          `<div style="font-family:system-ui,sans-serif;font-size:12px;color:#dcdce4;background:rgba(16,16,23,0.9);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(8px);">
+            <strong style="color:#8278dc;">${place.name}</strong>
           </div>`,
           { className: "map-popup" }
         )
@@ -209,16 +212,17 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
         }
         .map-popup .leaflet-popup-content { margin: 0 !important; }
         .map-popup .leaflet-popup-tip {
-          background: #ffffff !important;
-          border: 1px solid #e5e7eb;
+          background: rgba(16,16,23,0.9) !important;
+          border: none;
         }
         .leaflet-control-zoom a {
-          background: #ffffff !important;
-          color: #111827 !important;
-          border-color: #e5e7eb !important;
+          background: rgba(16,16,23,0.85) !important;
+          color: #dcdce4 !important;
+          border-color: rgba(255,255,255,0.06) !important;
           border-radius: 8px !important;
+          backdrop-filter: blur(8px);
         }
-        .leaflet-control-zoom a:hover { background: #f3f4f6 !important; }
+        .leaflet-control-zoom a:hover { background: rgba(24,24,34,0.95) !important; }
         .leaflet-control-zoom { border-radius: 10px !important; overflow: hidden; border: none !important; }
       `
       document.head.appendChild(style)

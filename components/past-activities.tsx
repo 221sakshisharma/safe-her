@@ -1,6 +1,6 @@
 "use client"
 
-import { History, AlertTriangle, ShieldOff, Eye } from "lucide-react"
+import { AlertTriangle, ShieldOff, Eye } from "lucide-react"
 
 const ACTIVITIES = [
   {
@@ -33,42 +33,31 @@ export function PastActivities() {
   const total = ACTIVITIES.reduce((acc, a) => acc + a.count, 0)
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
-            <History className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <h3 className="text-sm font-semibold text-foreground">Past Activities</h3>
-        </div>
-        <span className="text-[11px] text-muted-foreground">Last 30 days</span>
+    <div className="rounded-2xl border border-border/60 bg-card p-5">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[13px] font-medium text-muted-foreground">Past Activities</h3>
+        <span className="text-[11px] text-muted-foreground/60">Last 30 days</span>
       </div>
-      <div className="mb-4 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold text-foreground tabular-nums">{total}</span>
-        <span className="text-[11px] text-muted-foreground">total incidents</span>
+      <div className="mb-4">
+        <span className="text-3xl font-semibold tracking-[-0.03em] text-foreground tabular-nums">
+          {total}
+        </span>
+        <span className="ml-2 text-[11px] text-muted-foreground">total incidents</span>
       </div>
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2">
         {ACTIVITIES.map((a) => (
           <div
             key={a.type}
-            className="flex items-start gap-3 rounded-xl bg-accent/50 px-3.5 py-3 transition-colors hover:bg-accent"
+            className="flex items-center gap-3 rounded-xl bg-accent/40 px-3 py-2.5 transition-colors hover:bg-accent/70"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-              <a.icon className="h-4 w-4 text-muted-foreground" />
-            </div>
+            <a.icon className="h-4 w-4 shrink-0 text-muted-foreground/60" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between">
-                <p className="text-[13px] font-medium text-foreground">{a.type}</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-semibold text-foreground tabular-nums">
-                    {a.count}
-                  </span>
-                  <span className={`text-[10px] font-medium ${a.trendColor}`}>
-                    {a.trend}
-                  </span>
-                </div>
-              </div>
-              <p className="text-[11px] text-muted-foreground">{a.description}</p>
+              <p className="text-[13px] font-medium text-foreground">{a.type}</p>
+              <p className="text-[10px] text-muted-foreground/60">{a.description}</p>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[13px] font-semibold text-foreground tabular-nums">{a.count}</span>
+              <span className={`text-[10px] font-medium ${a.trendColor}`}>{a.trend}</span>
             </div>
           </div>
         ))}
