@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react"
 import { Send, Bot, User, Sparkles, Shield, MapPin, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 interface Message {
@@ -85,10 +84,10 @@ export function AIAssistantView() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
-      {/* System Context Banner */}
-      <div className="mb-4 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
+      {/* Context Banner */}
+      <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3 animate-fade-in">
         <Sparkles className="h-4 w-4 shrink-0 text-primary" />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
           AI Assistant has access to: Safety Score (72), 7 nearby incidents, risk predictions, and community reports. All responses are context-aware.
         </p>
       </div>
@@ -96,20 +95,21 @@ export function AIAssistantView() {
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto pb-4">
         <div className="flex flex-col gap-4">
-          {messages.map((msg) => (
+          {messages.map((msg, i) => (
             <div
               key={msg.id}
               className={cn(
-                "flex gap-3",
+                "flex gap-3 animate-fade-in",
                 msg.role === "user" ? "flex-row-reverse" : "flex-row"
               )}
+              style={{ animationDelay: `${i * 50}ms` }}
             >
               <div
                 className={cn(
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
                   msg.role === "assistant"
-                    ? "bg-primary/15 text-primary"
-                    : "bg-secondary text-muted-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-accent text-muted-foreground"
                 )}
               >
                 {msg.role === "assistant" ? (
@@ -122,11 +122,11 @@ export function AIAssistantView() {
                 className={cn(
                   "max-w-[80%] rounded-2xl px-4 py-3",
                   msg.role === "assistant"
-                    ? "rounded-tl-sm bg-card border border-border"
-                    : "rounded-tr-sm bg-primary text-primary-foreground"
+                    ? "rounded-tl-md border border-border bg-card"
+                    : "rounded-tr-md bg-primary text-primary-foreground"
                 )}
               >
-                <p className="whitespace-pre-line text-sm leading-relaxed">
+                <p className="whitespace-pre-line text-[13px] leading-relaxed">
                   {msg.content}
                 </p>
                 <p
@@ -144,15 +144,24 @@ export function AIAssistantView() {
           ))}
 
           {isTyping && (
-            <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <div className="flex gap-3 animate-fade-in">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3">
+              <div className="rounded-2xl rounded-tl-md border border-border bg-card px-4 py-3">
                 <div className="flex gap-1">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/40"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             </div>
@@ -162,12 +171,12 @@ export function AIAssistantView() {
 
       {/* Suggested Prompts */}
       {messages.length <= 1 && (
-        <div className="mb-3 grid grid-cols-2 gap-2">
+        <div className="mb-3 grid grid-cols-2 gap-2 animate-fade-in" style={{ animationDelay: "200ms" }}>
           {SUGGESTED_PROMPTS.map((prompt) => (
             <button
               key={prompt.text}
               onClick={() => handleSend(prompt.text)}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="flex items-center gap-2.5 rounded-2xl border border-border bg-card px-3.5 py-3 text-left text-[13px] text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground hover:shadow-sm"
             >
               <prompt.icon className="h-4 w-4 shrink-0 text-primary" />
               {prompt.text}
@@ -184,17 +193,17 @@ export function AIAssistantView() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Ask about safety in your area..."
-          className="flex-1 rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 rounded-2xl border border-border bg-card px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all"
           aria-label="Message input"
         />
         <Button
           size="icon"
-          className="h-12 w-12 shrink-0 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+          className="h-12 w-12 shrink-0 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
           onClick={() => handleSend()}
           disabled={!input.trim() || isTyping}
           aria-label="Send message"
         >
-          <Send className="h-4.5 w-4.5" />
+          <Send className="h-4 w-4" />
         </Button>
       </div>
     </div>

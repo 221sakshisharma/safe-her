@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 function getScoreColor(score: number) {
-  if (score >= 75) return { text: "text-success", stroke: "hsl(140, 50%, 45%)" }
-  if (score >= 50) return { text: "text-warning", stroke: "hsl(45, 90%, 55%)" }
-  return { text: "text-destructive", stroke: "hsl(0, 72%, 55%)" }
+  if (score >= 75) return { text: "text-success", stroke: "hsl(160, 55%, 42%)" }
+  if (score >= 50) return { text: "text-warning", stroke: "hsl(45, 85%, 55%)" }
+  return { text: "text-destructive", stroke: "hsl(0, 68%, 56%)" }
 }
 
 function getScoreLabel(score: number) {
@@ -17,8 +17,8 @@ function getScoreLabel(score: number) {
 
 export function SafetyScoreRing({
   score,
-  size = 180,
-  strokeWidth = 10,
+  size = 170,
+  strokeWidth = 8,
 }: {
   score: number
   size?: number
@@ -36,19 +36,17 @@ export function SafetyScoreRing({
   }, [score])
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg
-        width={size}
-        height={size}
-        className="-rotate-90"
-        aria-hidden="true"
-      >
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="hsl(220, 15%, 15%)"
+          stroke="hsl(var(--muted))"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -65,10 +63,10 @@ export function SafetyScoreRing({
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className={cn("text-4xl font-bold tabular-nums", text)}>
+        <span className={cn("text-4xl font-semibold tabular-nums", text)}>
           {animatedScore}
         </span>
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <span className="text-[11px] font-medium text-muted-foreground">
           {getScoreLabel(score)}
         </span>
       </div>
@@ -82,7 +80,7 @@ export function SafetyScoreBreakdown({
   factors: { label: string; value: number; max: number }[]
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3.5">
       {factors.map((f) => {
         const pct = (f.value / f.max) * 100
         const color =
@@ -93,15 +91,18 @@ export function SafetyScoreBreakdown({
               : "bg-destructive"
         return (
           <div key={f.label} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">{f.label}</span>
               <span className="font-medium text-foreground tabular-nums">
                 {f.value}/{f.max}
               </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
-                className={cn("h-full rounded-full transition-all duration-700", color)}
+                className={cn(
+                  "h-full rounded-full transition-all duration-700 ease-out",
+                  color
+                )}
                 style={{ width: `${pct}%` }}
               />
             </div>
