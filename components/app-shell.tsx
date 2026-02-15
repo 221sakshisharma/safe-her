@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Shield,
   Map,
@@ -13,9 +13,10 @@ import {
   Menu,
   X,
   Bell,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: Shield },
@@ -24,18 +25,18 @@ const navItems = [
   { id: "assistant", label: "AI Assistant", icon: MessageSquare },
   { id: "routes", label: "Safe Routes", icon: Navigation },
   { id: "community", label: "Community", icon: Users },
-]
+];
 
 export function AppShell({
   activeView,
   onViewChange,
   children,
 }: {
-  activeView: string
-  onViewChange: (view: string) => void
-  children: React.ReactNode
+  activeView: string;
+  onViewChange: (view: string) => void;
+  children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -55,16 +56,21 @@ export function AppShell({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card transition-transform duration-300 lg:static lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-2.5">
+          <div
+            className="flex items-center gap-2.5 cursor-pointer transition-opacity hover:opacity-80"
+            onClick={() => onViewChange("landing")}
+          >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
               <Shield className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-foreground">SafeHer</h1>
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                SafeHer
+              </h1>
               <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 AI Safety Platform
               </p>
@@ -82,14 +88,14 @@ export function AppShell({
         <nav className="flex-1 px-3 py-4" aria-label="Main navigation">
           <ul className="flex flex-col gap-1">
             {navItems.map((item) => {
-              const isActive = activeView === item.id
-              const isSOS = item.id === "sos"
+              const isActive = activeView === item.id;
+              const isSOS = item.id === "sos";
               return (
                 <li key={item.id}>
                   <button
                     onClick={() => {
-                      onViewChange(item.id)
-                      setSidebarOpen(false)
+                      onViewChange(item.id);
+                      setSidebarOpen(false);
                     }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
@@ -97,18 +103,20 @@ export function AppShell({
                         ? "bg-primary/10 text-primary"
                         : isSOS
                           ? "text-destructive hover:bg-destructive/10"
-                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                     )}
                     aria-current={isActive ? "page" : undefined}
                   >
-                    <item.icon className={cn("h-4.5 w-4.5", isSOS && "animate-pulse")} />
+                    <item.icon
+                      className={cn("h-4.5 w-4.5", isSOS && "animate-pulse")}
+                    />
                     {item.label}
                     {isSOS && (
                       <span className="ml-auto flex h-2 w-2 rounded-full bg-destructive" />
                     )}
                   </button>
                 </li>
-              )
+              );
             })}
           </ul>
         </nav>
@@ -151,7 +159,13 @@ export function AppShell({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
+            <ModeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              aria-label="Notifications"
+            >
               <Bell className="h-5 w-5 text-muted-foreground" />
               <span className="absolute right-1.5 top-1.5 flex h-2 w-2 rounded-full bg-destructive" />
             </Button>
@@ -171,5 +185,5 @@ export function AppShell({
         <div className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</div>
       </main>
     </div>
-  )
+  );
 }
