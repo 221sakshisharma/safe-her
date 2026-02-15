@@ -82,12 +82,13 @@ export async function GET(request: Request) {
     // Extract meaningful location name
     // Prefer: residential, suburb, city_district, town, city, village
     const address = geoData.address || {};
+
     const locationName = 
       address.residential || 
       address.suburb || 
       address.neighbourhood ||
       address.city_district || 
-      address.town || 
+      address.state || 
       address.city || 
       address.village || 
       'New Delhi';
@@ -118,20 +119,56 @@ export async function GET(request: Request) {
       snippet: item.contentSnippet || '',
     })).slice(0, 20); // Limit to top 20
 
+    // Mock coordinates for incidents (since RSS doesn't provide them)
+    // We disperse them randomly around the user's location
+    const incidentsWithCoords = incidents.map(inc => {
+        // Random offset between -0.01 and 0.01 degrees (~1km)
+        const latOffset = (Math.random() - 0.5) * 0.02;
+        const lngOffset = (Math.random() - 0.5) * 0.02;
+        
+        let type = 'suspicious';
+        const t = inc.title.toLowerCase();
+        if (KEYWORDS.high.some(k => t.includes(k))) type = 'severe';
+        else if (KEYWORDS.medium.some(k => t.includes(k))) type = 'moderate';
+        else if (KEYWORDS.low.some(k => t.includes(k))) type = 'minor';
+
+        return {
+            ...inc,
+            lat: parseFloat(lat) + latOffset,
+            lng: parseFloat(lng) + lngOffset,
+            type,
+            severity: type === 'severe' ? 'high' : (type === 'moderate' ? 'medium' : 'low')
+        };
+    });
+
     // 5. Calculate Score
-    const safetyScore = calculateSafetyScore(incidents);
+    let safetyScore = calculateSafetyScore(incidentsWithCoords);
     
+    // Fallback: If no incidents found, don't assume perfect safety.
+    // Check if we are in a major city (simple heuristic) or default to a cautious "High" safety (85) instead of 100.
+    if (incidentsWithCoords.length === 0) {
+        safetyScore = 85; // Default to "Safe" but not "Perfect"
+    }
+
     // Determine Risk Level
     let riskLevel = 'Low';
     if (safetyScore < 40) riskLevel = 'High';
     else if (safetyScore < 70) riskLevel = 'Moderate';
+    
+    // Mock Nearby Places (In a real app, use Google Places API)
+    const nearbyPlaces = [
+        { id: 1, lat: parseFloat(lat) + 0.002, lng: parseFloat(lng) + 0.002, name: "City Police Station", type: "police" },
+        { id: 2, lat: parseFloat(lat) - 0.003, lng: parseFloat(lng) + 0.004, name: "General Hospital", type: "hospital" },
+        { id: 3, lat: parseFloat(lat) + 0.004, lng: parseFloat(lng) - 0.003, name: "Fire Department", type: "fire" },
+    ];
 
     return NextResponse.json({
       location: locationName,
       fullAddress: geoData.display_name,
       safetyScore,
       riskLevel,
-      incidents,
+      incidents: incidentsWithCoords,
+      nearbyPlaces
     });
 
   } catch (error) {

@@ -14,9 +14,7 @@ import {
   SafetyScoreRing,
   SafetyScoreBreakdown,
 } from "@/components/safety-score";
-import { SafetyMap } from "@/components/safety-map";
 import { RiskPredictionChart } from "@/components/risk-prediction";
-import { PastActivities } from "@/components/past-activities";
 import { useSafety } from "@/context/safety-context";
 
 const SCORE_FACTORS = [
@@ -121,25 +119,8 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        {/* Map + Activities */}
-        <div className="flex flex-col gap-4 lg:col-span-2 lg:gap-6">
-          <Card className="border-border bg-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Eye className="h-4 w-4 text-primary" />
-                Live Safety Map
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-4">
-              <SafetyMap />
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:gap-6">
-            <PastActivities incidents={incidents} />
-            <RiskPredictionChart />
-          </div>
-        </div>
+        {/* Risk Prediction Chart (Previously Map + Activities) */}
+        <RiskPredictionChart className="lg:col-span-2 h-full" />
       </div>
     </div>
   );

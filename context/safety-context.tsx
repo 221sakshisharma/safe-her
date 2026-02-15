@@ -9,6 +9,18 @@ interface Incident {
   pubDate: string;
   source: string;
   snippet: string;
+  lat: number;
+  lng: number;
+  type: string;
+  severity: string;
+}
+
+interface NearbyPlace {
+  id: number;
+  lat: number;
+  lng: number;
+  name: string;
+  type: string;
 }
 
 interface SafetyContextType {
@@ -18,6 +30,7 @@ interface SafetyContextType {
   safetyScore: number;
   riskLevel: string;
   incidents: Incident[];
+  nearbyPlaces: NearbyPlace[];
   loading: boolean;
   error: string | null;
   refresh: () => void;
@@ -33,6 +46,7 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
     safetyScore: number;
     riskLevel: string;
     incidents: Incident[];
+    nearbyPlaces: NearbyPlace[];
   } | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -75,6 +89,7 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
         safetyScore: data?.safetyScore ?? 0,
         riskLevel: data?.riskLevel || "Unknown",
         incidents: data?.incidents || [],
+        nearbyPlaces: data?.nearbyPlaces || [],
         loading: loading || geoLoading,
         error: error || (geoError ? "Location access denied" : null),
         refresh,

@@ -25,10 +25,9 @@ export async function POST(req: Request) {
       
       Guidelines:
       1. Prioritize safety. If the user is in danger, advise calling emergency services immediately.
-      2. Use the provided context to give specific advice about their current location.
-      3. Be empathetic, calm, and concise.
-      4. If the safety score is low, warn the user to be extra cautious.
-      5. Do not make up fake incidents. Only refer to the ones in the context or general safety tips.
+      2. Be empathetic, calm, and concise.
+      3. If the safety score is low, warn the user to be extra cautious.
+      4. Do not make up fake incidents. Only refer to the ones in the context or general safety tips.
       `
     };
 
