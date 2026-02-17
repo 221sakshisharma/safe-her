@@ -13,10 +13,12 @@ import {
   Menu,
   X,
   Bell,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
+import { useAuth } from "@/context/auth-context";
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: Shield },
@@ -25,6 +27,7 @@ const navItems = [
   { id: "assistant", label: "AI Assistant", icon: MessageSquare },
   { id: "routes", label: "Safe Routes", icon: Navigation },
   { id: "community", label: "Community", icon: Users },
+  { id: "profile", label: "Profile", icon: User },
 ];
 
 export function AppShell({
@@ -37,6 +40,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -122,13 +126,20 @@ export function AppShell({
         </nav>
 
         <div className="border-t border-border p-4">
-          <div className="flex items-center gap-3 rounded-lg bg-secondary px-3 py-2.5">
+          <div
+            className="flex items-center gap-3 rounded-lg bg-secondary px-3 py-2.5 cursor-pointer hover:bg-secondary/80"
+            onClick={() => onViewChange("profile")}
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
-              SA
+              {user?.name ? user.name.slice(0, 2).toUpperCase() : "SA"}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Sarah A.</p>
-              <p className="text-xs text-muted-foreground">Protected</p>
+            <div className="flex-1 overflow-hidden">
+              <p className="truncate text-sm font-medium text-foreground">
+                {user?.name || "Guest User"}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                Protected
+              </p>
             </div>
             <span className="flex h-2.5 w-2.5 rounded-full bg-success" />
           </div>

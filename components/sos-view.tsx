@@ -1,6 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Phone,
@@ -11,183 +13,102 @@ import {
   Send,
   Clock,
   CheckCircle2,
-  Loader2,
-  Navigation,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { useGeolocation } from "@/hooks/use-geolocation"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useGeolocation } from "@/hooks/use-geolocation";
 
 declare global {
   interface Window {
-    L: typeof import("leaflet")
+    L: typeof import("leaflet");
   }
 }
 
 const TRUSTED_CIRCLE = [
   { id: 1, name: "Mom", phone: "+1 555-0101", status: "online", initials: "M" },
-  { id: 2, name: "Priya S.", phone: "+1 555-0102", status: "online", initials: "PS" },
-  { id: 3, name: "David K.", phone: "+1 555-0103", status: "offline", initials: "DK" },
-  { id: 4, name: "SafeHer Support", phone: "911", status: "online", initials: "SH" },
-]
+  {
+    id: 2,
+    name: "Priya S.",
+    phone: "+1 555-0102",
+    status: "online",
+    initials: "PS",
+  },
+  {
+    id: 3,
+    name: "David K.",
+    phone: "+1 555-0103",
+    status: "offline",
+    initials: "DK",
+  },
+  {
+    id: 4,
+    name: "SafeHer Support",
+    phone: "911",
+    status: "online",
+    initials: "SH",
+  },
+];
 
 const NEARBY_HELP = [
   { name: "Central Police Station", distance: "0.3 km", type: "Police" },
   { name: "City Hospital ER", distance: "0.8 km", type: "Hospital" },
   { name: "Fire Station #5", distance: "1.2 km", type: "Fire" },
-]
-
-function SOSMiniMap({ lat, lng, active }: { lat: number; lng: number; active: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<L.Map | null>(null)
-  const [leafletLoaded, setLeafletLoaded] = useState(false)
-
-  useEffect(() => {
-    if (window.L) {
-      setLeafletLoaded(true)
-      return
-    }
-    const link = document.createElement("link")
-    link.rel = "stylesheet"
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    document.head.appendChild(link)
-    const script = document.createElement("script")
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    script.onload = () => setLeafletLoaded(true)
-    document.head.appendChild(script)
-  }, [])
-
-  useEffect(() => {
-    if (!leafletLoaded || !containerRef.current) return
-    const L = window.L
-
-    if (mapRef.current) {
-      mapRef.current.setView([lat, lng], 16)
-      return
-    }
-
-    const map = L.map(containerRef.current, {
-      zoomControl: false,
-      attributionControl: false,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false,
-    }).setView([lat, lng], 16)
-
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-    }).addTo(map)
-
-    const pulseColor = active ? "rgba(239,68,68" : "rgba(45,212,191"
-    const solidColor = active ? "#ef4444" : "#2dd4bf"
-    const borderColor = active ? "#fca5a5" : "#99f6e4"
-
-    const userIcon = L.divIcon({
-      className: "sos-user-marker",
-      html: `
-        <div style="position:relative;width:48px;height:48px;">
-          <div style="position:absolute;inset:0;border-radius:50%;background:${pulseColor},0.15);animation:sos-pulse 1.5s ease-out infinite;"></div>
-          <div style="position:absolute;inset:6px;border-radius:50%;background:${pulseColor},0.25);animation:sos-pulse 1.5s ease-out infinite 0.3s;"></div>
-          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:${solidColor};border:3px solid ${borderColor};box-shadow:0 0 16px ${pulseColor},0.6);"></div>
-        </div>
-      `,
-      iconSize: [48, 48],
-      iconAnchor: [24, 24],
-    })
-
-    L.marker([lat, lng], { icon: userIcon }).addTo(map)
-
-    // Accuracy/broadcast circle
-    L.circle([lat, lng], {
-      radius: active ? 200 : 100,
-      color: active ? "rgba(239,68,68,0.4)" : "rgba(45,212,191,0.3)",
-      fillColor: active ? "rgba(239,68,68,0.08)" : "rgba(45,212,191,0.06)",
-      fillOpacity: 1,
-      weight: 1,
-    }).addTo(map)
-
-    if (!document.getElementById("sos-pulse-css")) {
-      const style = document.createElement("style")
-      style.id = "sos-pulse-css"
-      style.textContent = `
-        @keyframes sos-pulse {
-          0% { transform: scale(0.5); opacity: 1; }
-          100% { transform: scale(1.8); opacity: 0; }
-        }
-      `
-      document.head.appendChild(style)
-    }
-
-    mapRef.current = map
-  }, [leafletLoaded, lat, lng, active])
-
-  useEffect(() => {
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove()
-        mapRef.current = null
-      }
-    }
-  }, [])
-
-  if (!leafletLoaded) {
-    return (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-card">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative h-48 overflow-hidden rounded-xl border border-border">
-      <div ref={containerRef} className="absolute inset-0" />
-      <div className="absolute bottom-2 left-2 z-[1000] rounded-md bg-card/90 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
-        {lat.toFixed(4)}, {lng.toFixed(4)}
-      </div>
-      {active && (
-        <div className="absolute right-2 top-2 z-[1000] flex items-center gap-1.5 rounded-md bg-destructive/20 px-2 py-1 backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
-          <span className="text-[10px] font-medium text-destructive">Broadcasting</span>
-        </div>
-      )}
-    </div>
-  )
-}
+];
 
 export function SOSView() {
-  const [activated, setActivated] = useState(false)
-  const [countdown, setCountdown] = useState<number | null>(null)
-  const { lat, lng, hasLocation, error, loading } = useGeolocation()
+  const [activated, setActivated] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const { lat, lng, hasLocation, error, loading } = useGeolocation();
+  const { user } = useAuth();
+  const router = useRouter();
 
   function handleSOS() {
     if (activated) {
-      setActivated(false)
-      setCountdown(null)
-      return
+      setActivated(false);
+      setCountdown(null);
+      return;
     }
-    setCountdown(3)
+    setCountdown(3);
     const interval = setInterval(() => {
       setCountdown((prev) => {
         if (prev === null || prev <= 1) {
-          clearInterval(interval)
-          setActivated(true)
-          return null
+          clearInterval(interval);
+          setActivated(true);
+
+          // Send WhatsApp messages
+          if (user?.trustedContacts?.length) {
+            const message = `SOS! ${user.name} needs help.\nLocation: https://maps.google.com/?q=${lat},${lng}`;
+            const encodedMessage = encodeURIComponent(message);
+
+            // Open WhatsApp for the first contact (limitation: browser can only open one window reliably)
+            // Ideally we'd loop but browsers block multiple popups
+            const contact = user.trustedContacts[0];
+            if (contact.phone) {
+              window.open(
+                `https://wa.me/${contact.phone.replace(/\D/g, "")}?text=${encodedMessage}`,
+                "_blank",
+              );
+            }
+          }
+
+          return null;
         }
-        return prev - 1
-      })
-    }, 1000)
+        return prev - 1;
+      });
+    }, 1000);
   }
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
       {/* SOS Button Section */}
-      <Card className={cn(
-        "border-border bg-card transition-colors",
-        activated && "border-destructive/50 bg-destructive/5"
-      )}>
+      <Card
+        className={cn(
+          "border-border bg-card transition-colors",
+          activated && "border-destructive/50 bg-destructive/5",
+        )}
+      >
         <CardContent className="flex flex-col items-center gap-6 py-8">
           {activated && (
             <div className="flex items-center gap-2 rounded-full bg-destructive/10 px-4 py-1.5">
@@ -217,21 +138,27 @@ export function SOSView() {
                   ? "bg-destructive shadow-[0_0_40px_hsl(0,72%,55%,0.4)]"
                   : countdown !== null
                     ? "bg-destructive/80 shadow-[0_0_30px_hsl(0,72%,55%,0.3)]"
-                    : "bg-destructive/90 hover:bg-destructive hover:shadow-[0_0_30px_hsl(0,72%,55%,0.3)]"
+                    : "bg-destructive/90 hover:bg-destructive hover:shadow-[0_0_30px_hsl(0,72%,55%,0.3)]",
               )}
               aria-label={activated ? "Cancel SOS alert" : "Activate SOS alert"}
             >
               {countdown !== null ? (
-                <span className="text-5xl font-bold text-destructive-foreground">{countdown}</span>
+                <span className="text-5xl font-bold text-destructive-foreground">
+                  {countdown}
+                </span>
               ) : activated ? (
                 <>
                   <X className="h-10 w-10 text-destructive-foreground" />
-                  <span className="mt-1 text-xs font-semibold text-destructive-foreground">CANCEL</span>
+                  <span className="mt-1 text-xs font-semibold text-destructive-foreground">
+                    CANCEL
+                  </span>
                 </>
               ) : (
                 <>
                   <AlertTriangle className="h-10 w-10 text-destructive-foreground" />
-                  <span className="mt-1 text-sm font-bold text-destructive-foreground">SOS</span>
+                  <span className="mt-1 text-sm font-bold text-destructive-foreground">
+                    SOS
+                  </span>
                 </>
               )}
             </button>
@@ -249,7 +176,11 @@ export function SOSView() {
                 <Phone className="h-3.5 w-3.5" />
                 Call 911
               </Button>
-              <Button size="sm" variant="outline" className="gap-1.5 border-border text-foreground bg-transparent">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-border text-foreground bg-transparent"
+              >
                 <Send className="h-3.5 w-3.5" />
                 Share Location
               </Button>
@@ -257,16 +188,24 @@ export function SOSView() {
           )}
 
           {/* Live Location Mini Map */}
-          <div className="w-full max-w-md">
+          {/* <div className="w-full max-w-md">
             <SOSMiniMap lat={lat} lng={lng} active={activated} />
             <div className="mt-2 flex items-center justify-center gap-2">
               <Navigation className="h-3 w-3 text-primary" />
               <span className="text-xs text-muted-foreground">
-                {loading ? "Getting location..." : hasLocation ? `Live GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}` : `Approximate: ${lat.toFixed(4)}, ${lng.toFixed(4)}`}
+                {loading
+                  ? "Getting location..."
+                  : hasLocation
+                    ? `Live GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`
+                    : `Approximate: ${lat.toFixed(4)}, ${lng.toFixed(4)}`}
               </span>
-              {error && <span className="text-[10px] text-warning">(GPS unavailable)</span>}
+              {error && (
+                <span className="text-[10px] text-warning">
+                  (GPS unavailable)
+                </span>
+              )}
             </div>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 
@@ -281,35 +220,54 @@ export function SOSView() {
           </CardHeader>
           <CardContent className="pb-4">
             <div className="flex flex-col gap-2">
-              {TRUSTED_CIRCLE.map((person) => (
-                <div
-                  key={person.id}
-                  className="flex items-center gap-3 rounded-lg bg-secondary/50 px-3 py-2.5"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                    {person.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">{person.name}</p>
-                    <p className="text-xs text-muted-foreground">{person.phone}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "h-2 w-2 rounded-full",
-                        person.status === "online" ? "bg-success" : "bg-muted-foreground"
-                      )}
-                    />
-                    {activated && person.status === "online" && (
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                    )}
-                  </div>
+              {!user?.trustedContacts || user.trustedContacts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No trusted contacts added yet.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/profile")}
+                  >
+                    Add Contacts
+                  </Button>
                 </div>
-              ))}
+              ) : (
+                user.trustedContacts.map((person, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 rounded-lg bg-secondary/50 px-3 py-2.5"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                      {person.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {person.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {person.phone}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-success" />
+                      {activated && (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-            <Button variant="outline" className="mt-3 w-full border-border text-muted-foreground bg-transparent" size="sm">
+            <Button
+              variant="outline"
+              className="mt-3 w-full border-border text-muted-foreground bg-transparent"
+              size="sm"
+              onClick={() => router.push("/profile")}
+            >
               <Users className="mr-1.5 h-3.5 w-3.5" />
-              Add to Circle
+              Manage Circle
             </Button>
           </CardContent>
         </Card>
@@ -339,10 +297,17 @@ export function SOSView() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">{place.name}</p>
-                    <p className="text-xs text-muted-foreground">{place.distance}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {place.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {place.distance}
+                    </p>
                   </div>
-                  <Badge variant="outline" className="border-border text-[10px] text-muted-foreground">
+                  <Badge
+                    variant="outline"
+                    className="border-border text-[10px] text-muted-foreground"
+                  >
                     {place.type}
                   </Badge>
                 </div>
@@ -353,7 +318,8 @@ export function SOSView() {
               <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
                 <Clock className="h-4 w-4 text-primary" />
                 <p className="text-xs text-primary">
-                  Live GPS location shared with emergency contacts. Nearest help: 0.3 km away.
+                  Live GPS location shared with emergency contacts. Nearest
+                  help: 0.3 km away.
                 </p>
               </div>
             )}
@@ -369,5 +335,5 @@ export function SOSView() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
