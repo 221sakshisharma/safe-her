@@ -98,6 +98,16 @@ export function AppShell({
                 <li key={item.id}>
                   <button
                     onClick={() => {
+                      if (item.id === "routes") {
+                        window.open(
+                          "https://safe-routes-zv1d.onrender.com/",
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                        setSidebarOpen(false);
+                        return;
+                      }
+
                       onViewChange(item.id);
                       setSidebarOpen(false);
                     }}
