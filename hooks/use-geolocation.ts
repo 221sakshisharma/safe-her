@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 
 interface GeolocationState {
   latitude: number | null
@@ -11,8 +11,8 @@ interface GeolocationState {
 }
 
 const DEFAULT_LOCATION = {
-  latitude: 28.6139, // New Delhi as fallback
-  longitude: 77.209,
+  latitude: 28.6669, // Kashmere Gate, Delhi
+  longitude: 77.229,
 }
 
 export function useGeolocation(watch = true) {
@@ -24,59 +24,37 @@ export function useGeolocation(watch = true) {
     error: null,
   })
 
-  const onSuccess = useCallback((position: GeolocationPosition) => {
+  useEffect(() => {
+    // Geolocation is temporarily disabled; use a fixed location across the app.
     setState({
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy,
+      latitude: DEFAULT_LOCATION.latitude,
+      longitude: DEFAULT_LOCATION.longitude,
+      accuracy: null,
       loading: false,
       error: null,
     })
-  }, [])
 
-  const onError = useCallback((error: GeolocationPositionError) => {
-    setState((prev) => ({
-      ...prev,
-      latitude: prev.latitude ?? DEFAULT_LOCATION.latitude,
-      longitude: prev.longitude ?? DEFAULT_LOCATION.longitude,
-      loading: false,
-      error: error.message,
-    }))
-  }, [])
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setState({
-        latitude: DEFAULT_LOCATION.latitude,
-        longitude: DEFAULT_LOCATION.longitude,
-        accuracy: null,
-        loading: false,
-        error: "Geolocation is not supported by this browser.",
-      })
-      return
-    }
-
-    const options: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 30000,
-    }
-
-    // Get initial position
-    navigator.geolocation.getCurrentPosition(onSuccess, onError, options)
-
-    // Optionally watch for position changes
-    let watchId: number | undefined
-    if (watch) {
-      watchId = navigator.geolocation.watchPosition(onSuccess, onError, options)
-    }
-
-    return () => {
-      if (watchId !== undefined) {
-        navigator.geolocation.clearWatch(watchId)
-      }
-    }
-  }, [watch, onSuccess, onError])
+    // const options: PositionOptions = {
+    //   enableHighAccuracy: true,
+    //   timeout: 10000,
+    //   maximumAge: 30000,
+    // }
+    //
+    // // Get initial position
+    // navigator.geolocation.getCurrentPosition(onSuccess, onError, options)
+    //
+    // // Optionally watch for position changes
+    // let watchId: number | undefined
+    // if (watch) {
+    //   watchId = navigator.geolocation.watchPosition(onSuccess, onError, options)
+    // }
+    //
+    // return () => {
+    //   if (watchId !== undefined) {
+    //     navigator.geolocation.clearWatch(watchId)
+    //   }
+    // }
+  }, [watch])
 
   return {
     ...state,
