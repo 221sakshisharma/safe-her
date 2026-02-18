@@ -12,6 +12,8 @@ const KEYWORDS = {
 
 // Function to calculate safety score
 function calculateSafetyScore(incidents: any[]) {
+  if (!incidents.length) return 85;
+
   let baseScore = 100;
   const now = new Date();
 
@@ -44,58 +46,62 @@ function calculateSafetyScore(incidents: any[]) {
   // Logarithmic scaling (diminishing returns)
   const logPenalty = Math.log(1 + totalWeightedSeverity) * 15;
 
-  // Incident density normalization
-  const densityFactor = Math.min(2, incidents.length / 10);
+  // Incident density normalization (keep influence moderate)
+  const densityFactor = Math.min(1.25, 1 + incidents.length / 25);
 
-  // Source diversity boost
+  // Source diversity boost (bounded to avoid over-penalizing)
   const uniqueSources = new Set(incidents.map(i => i.source)).size;
-  const sourceFactor = Math.min(1.5, uniqueSources / 5);
+  const sourceFactor = Math.max(0.8, Math.min(1.2, 0.8 + uniqueSources / 20));
 
   const finalPenalty = logPenalty * densityFactor * sourceFactor;
 
   const finalScore = baseScore - finalPenalty;
+  if (!Number.isFinite(finalScore)) return 50;
 
-  return Math.max(0, Math.min(100, Math.round(finalScore)));
+  // Keep score meaningful and non-zero for UI/UX consistency.
+  return Math.max(15, Math.min(100, Math.round(finalScore)));
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get('lat');
   const lng = searchParams.get('lng');
+  const fixedLat = 28.6669;
+  const fixedLng = 77.229;
+  const locationName = 'Kashmere Gate, Delhi';
+  const fullAddress = 'Kashmere Gate, Central Delhi, Delhi, India';
 
   if (!lat || !lng) {
     return NextResponse.json({ error: 'Latitude and Longitude required' }, { status: 400 });
   }
 
   try {
-    // 1. Reverse Geocoding using Nominatim (OpenStreetMap)
-    const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
-    const geoRes = await fetch(geoUrl, {
-      headers: {
-        'User-Agent': 'SafeHer/1.0 (safety-app-project)',
-      },
-    });
-    
-    if (!geoRes.ok) throw new Error('Failed to fetch location data');
-    const geoData = await geoRes.json();
-    
-    // Extract meaningful location name
-    // Prefer: residential, suburb, city_district, town, city, village
-    const address = geoData.address || {};
-
-    const locationName = 
-      address.residential || 
-      address.suburb || 
-      address.neighbourhood ||
-      address.city_district || 
-      address.state || 
-      address.city || 
-      address.village || 
-      'New Delhi';
+    // 1. Reverse geocoding is temporarily disabled.
+    // const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+    // const geoRes = await fetch(geoUrl, {
+    //   headers: {
+    //     'User-Agent': 'SafeHer/1.0 (safety-app-project)',
+    //   },
+    // });
+    //
+    // if (!geoRes.ok) throw new Error('Failed to fetch location data');
+    // const geoData = await geoRes.json();
+    //
+    // // Extract meaningful location name
+    // // Prefer: residential, suburb, city_district, town, city, village
+    // const address = geoData.address || {};
+    // const locationName =
+    //   address.residential ||
+    //   address.suburb ||
+    //   address.neighbourhood ||
+    //   address.city_district ||
+    //   address.state ||
+    //   address.city ||
+    //   address.village ||
+    //   'New Delhi';
 
     // 2. Build Google News RSS Query
     // Query format: "LocationName (keyword1 OR keyword2 ...)"
-    const allKeywords = [...KEYWORDS.high, ...KEYWORDS.medium, ...KEYWORDS.low];
     // Take a subset to avoid URL length issues, or group them
     const queryKeywords = [
         "rape", "sexual assault", "harassment", 
@@ -134,8 +140,8 @@ export async function GET(request: Request) {
 
         return {
             ...inc,
-            lat: parseFloat(lat) + latOffset,
-            lng: parseFloat(lng) + lngOffset,
+            lat: fixedLat + latOffset,
+            lng: fixedLng + lngOffset,
             type,
             severity: type === 'severe' ? 'high' : (type === 'moderate' ? 'medium' : 'low')
         };
@@ -157,14 +163,14 @@ export async function GET(request: Request) {
     
     // Mock Nearby Places (In a real app, use Google Places API)
     const nearbyPlaces = [
-        { id: 1, lat: parseFloat(lat) + 0.002, lng: parseFloat(lng) + 0.002, name: "City Police Station", type: "police" },
-        { id: 2, lat: parseFloat(lat) - 0.003, lng: parseFloat(lng) + 0.004, name: "General Hospital", type: "hospital" },
-        { id: 3, lat: parseFloat(lat) + 0.004, lng: parseFloat(lng) - 0.003, name: "Fire Department", type: "fire" },
+        { id: 1, lat: fixedLat + 0.002, lng: fixedLng + 0.002, name: "City Police Station", type: "police" },
+        { id: 2, lat: fixedLat - 0.003, lng: fixedLng + 0.004, name: "General Hospital", type: "hospital" },
+        { id: 3, lat: fixedLat + 0.004, lng: fixedLng - 0.003, name: "Fire Department", type: "fire" },
     ];
 
     return NextResponse.json({
       location: locationName,
-      fullAddress: geoData.display_name,
+      fullAddress,
       safetyScore,
       riskLevel,
       incidents: incidentsWithCoords,
