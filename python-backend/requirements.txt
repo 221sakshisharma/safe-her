@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+feedparser
+requests
+geopy
+email-validator
+python-dateutil

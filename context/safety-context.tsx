@@ -57,7 +57,7 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const res = await fetch(
-        `/api/incidents?lat=${latitude}&lng=${longitude}`,
+        `http://localhost:8000/incidents?lat=${latitude}&lng=${longitude}`,
       );
       if (!res.ok) throw new Error("Failed to fetch safety data");
       const result = await res.json();

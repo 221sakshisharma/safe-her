@@ -135,10 +135,65 @@ export function SafeRoutesView() {
     document.head.appendChild(script)
   }, [])
 
-  const routeData = generateRoutes(lat, lng)
+  const [routes, setRoutes] = useState<any[]>([])
+  const [destination, setDestination] = useState("")
+  const [isRouting, setIsRouting] = useState(false)
+
+  const handleFindRoute = async () => {
+    if (!destination || !hasLocation) return
+    setIsRouting(true)
+    
+    try {
+      // 1. Geocode destination
+      const geoRes = await fetch(`http://localhost:8000/geocode?query=${encodeURIComponent(destination)}`)
+      if (!geoRes.ok) throw new Error("Location not found")
+      const destData = await geoRes.json()
+
+      // 2. Get Route
+      const routeRes = await fetch(`http://localhost:8000/route?start_lon=${lng}&start_lat=${lat}&end_lon=${destData.lng}&end_lat=${destData.lat}`)
+      if (!routeRes.ok) throw new Error("No route found")
+      const routeData = await routeRes.json()
+
+      // 3. Process Routes
+      const newRoutes = [
+        {
+          id: 1,
+          name: "Fastest Route",
+          distance: `${(routeData.fastest.distance / 1000).toFixed(1)} km`,
+          duration: `${Math.round(routeData.fastest.duration / 60)} min`,
+          safety: "medium",
+          safetyScore: 75,
+          features: ["Direct", "Main Roads"],
+          recommended: false,
+          color: "#eab308",
+          points: routeData.fastest.coords.map((c: number[]) => [c[1], c[0]]) // Swap [lon, lat] to [lat, lon]
+        },
+        {
+          id: 2,
+          name: "Safest Route",
+          distance: `${(routeData.safest.distance / 1000).toFixed(1)} km`,
+          duration: `${Math.round(routeData.safest.duration / 60)} min`,
+          safety: "high",
+          safetyScore: 92,
+          features: ["Well-lit", "Patrolled", "Crowded"],
+          recommended: true,
+          color: "#2dd4bf",
+          points: routeData.safest.coords.map((c: number[]) => [c[1], c[0]])
+        }
+      ]
+
+      setRoutes(newRoutes)
+      setSelectedRoute(2) // Default to safest
+    } catch (err) {
+      console.error(err)
+      // Fallback to mock if server fails (for demo)
+    } finally {
+      setIsRouting(false)
+    }
+  }
 
   const drawRoutes = useCallback(() => {
-    if (!mapRef.current || !leafletLoaded) return
+    if (!mapRef.current || !leafletLoaded || routes.length === 0) return
     const L = window.L
     const map = mapRef.current
 
@@ -146,10 +201,8 @@ export function SafeRoutesView() {
     layersRef.current.forEach((layer) => map.removeLayer(layer))
     layersRef.current = []
 
-    const currentRouteData = generateRoutes(lat, lng)
-
     // Draw all routes
-    currentRouteData.routes.forEach((route) => {
+    routes.forEach((route) => {
       const isSelected = route.id === selectedRoute
       const polyline = L.polyline(route.points, {
         color: route.color,
@@ -176,43 +229,17 @@ export function SafeRoutesView() {
     })
     const startMarker = L.marker([lat, lng], { icon: startIcon })
       .addTo(map)
-      .bindPopup(
-        `<div style="font-family:sans-serif;font-size:12px;color:#e5e7eb;background:#1f2937;padding:6px 10px;border-radius:6px;">
-          <strong style="color:#2dd4bf;">Your Location</strong>
-        </div>`,
-        { className: "dark-popup" }
-      )
+      .bindPopup("Your Location")
     layersRef.current.push(startMarker)
 
-    // Destination marker
-    const destIcon = L.divIcon({
-      className: "custom-dest-marker",
-      html: `<div style="width:16px;height:16px;border-radius:50%;background:#ef4444;border:3px solid #fca5a5;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(239,68,68,0.5);">
-        <span style="color:white;font-size:8px;font-weight:bold;">B</span>
-      </div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-    })
-    const destMarker = L.marker(
-      [currentRouteData.destination.lat, currentRouteData.destination.lng],
-      { icon: destIcon }
-    )
-      .addTo(map)
-      .bindPopup(
-        `<div style="font-family:sans-serif;font-size:12px;color:#e5e7eb;background:#1f2937;padding:6px 10px;border-radius:6px;">
-          <strong style="color:#ef4444;">Destination</strong>
-        </div>`,
-        { className: "dark-popup" }
-      )
-    layersRef.current.push(destMarker)
-
     // Fit bounds to show the selected route
-    const selectedRouteData = currentRouteData.routes.find((r) => r.id === selectedRoute)
+    const selectedRouteData = routes.find((r) => r.id === selectedRoute)
     if (selectedRouteData) {
       const bounds = L.latLngBounds(selectedRouteData.points)
       map.fitBounds(bounds, { padding: [40, 40] })
     }
-  }, [lat, lng, selectedRoute, leafletLoaded])
+  }, [lat, lng, selectedRoute, leafletLoaded, routes])
+
 
   // Initialize map
   useEffect(() => {
@@ -278,7 +305,7 @@ export function SafeRoutesView() {
     }
   }, [])
 
-  const activeRoute = routeData.routes.find((r) => r.id === selectedRoute)
+  const activeRoute = routes.find((r) => r.id === selectedRoute)
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
@@ -311,13 +338,19 @@ export function SafeRoutesView() {
               </label>
               <Input
                 id="route-to"
-                defaultValue="Central Station"
+                placeholder="Enter destination..."
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
                 className="border-border bg-secondary text-foreground"
               />
             </div>
-            <Button className="self-end bg-primary text-primary-foreground hover:bg-primary/90">
-              <Navigation className="mr-1.5 h-4 w-4" />
-              Find Route
+            <Button 
+              className="self-end bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleFindRoute}
+              disabled={isRouting || !destination}
+            >
+              {isRouting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Navigation className="mr-1.5 h-4 w-4" />}
+              {isRouting ? "Finding..." : "Find Route"}
             </Button>
           </div>
           {error && (
@@ -346,7 +379,7 @@ export function SafeRoutesView() {
             )}
 
             {/* Route labels on map */}
-            {!loading && leafletLoaded && (
+            {!loading && leafletLoaded && routes.length > 0 && (
               <>
                 <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-1 rounded-md bg-primary/20 px-2 py-1 backdrop-blur-sm">
                   <MapPin className="h-3 w-3 text-primary" />
@@ -364,7 +397,13 @@ export function SafeRoutesView() {
         {/* Route Options */}
         <div className="flex flex-col gap-3 lg:col-span-2">
           <h3 className="text-sm font-semibold text-foreground">Available Routes</h3>
-          {routeData.routes.map((route) => (
+          {routes.length === 0 && !isRouting && (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              Enter a destination to find safe routes.
+            </div>
+          )}
+          
+          {routes.map((route) => (
             <button
               key={route.id}
               onClick={() => setSelectedRoute(route.id)}

@@ -38,6 +38,7 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
   const { lat, lng, loading, hasLocation, error } = useGeolocation();
   const { incidents, nearbyPlaces } = useSafety();
   const markersRef = useRef<L.Layer[]>([]);
+  const heatmapRef = useRef<L.Layer[]>([]);
 
   // Load Leaflet CSS and JS
   useEffect(() => {
@@ -228,6 +229,53 @@ export function SafetyMap({ fullscreen = false }: { fullscreen?: boolean }) {
       document.head.appendChild(style);
     }
   }, [leafletLoaded, lat, lng, loading, hasLocation, incidents, nearbyPlaces]);
+
+  // Fetch and Render Heatmap from Python Server
+  useEffect(() => {
+    if (!leafletLoaded || !mapRef.current) return;
+
+    const fetchHeatmap = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/heatmap");
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Clear old heatmap
+        heatmapRef.current.forEach((layer) =>
+          mapRef.current?.removeLayer(layer),
+        );
+        heatmapRef.current = [];
+
+        const L = window.L;
+        const map = mapRef.current;
+
+        if (data.grid) {
+          data.grid.forEach((point: any) => {
+            if (point.score > 2) {
+              // Only show significant risk
+              const circle = L.circle([point.lat, point.lng], {
+                radius: 800, // Grid step is ~2km, so 800m radius covers nicely
+                color: "transparent",
+                fillColor:
+                  point.score > 8
+                    ? "#ef4444"
+                    : point.score > 5
+                      ? "#f97316"
+                      : "#eab308",
+                fillOpacity: 0.3,
+                weight: 0,
+              }).addTo(map!);
+              heatmapRef.current.push(circle);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load heatmap:", err);
+      }
+    };
+
+    fetchHeatmap();
+  }, [leafletLoaded]);
 
   // Cleanup map on unmount
   useEffect(() => {
